@@ -1,0 +1,35 @@
+{
+  "course_id": 12345,
+  "assignment_id": 67890,
+
+  "expected_filenames": ["a6.pdf"],
+  "filename_aliases": {
+    "assignment6.pdf": "a6.pdf",
+    "Assignment 6.pdf": "a6.pdf",
+    "a6 (1).pdf": "a6.pdf"
+  },
+
+  "allowed_extensions": [".pdf", ".zip", ".txt", ".md", ".py", ".ipynb"],
+  "required_files": ["a6.pdf"],
+  "zip_policy": { "allow_zip": true, "flatten": true },
+
+  "tests": [
+    {
+      "name": "nl_smoke",
+      "type": "nl_check",
+      "rules": [
+        { "id": "min_length", "min_chars": 800 }
+      ]
+    }
+  ],
+
+  "llm": { "enabled": true, "model": "gpt-4.1-mini" },
+  "llm_prompts": [
+    {
+      "name": "a6_review",
+      "prompt_template": "Review the submission for completeness and clarity. Return actionable suggestions."
+    }
+  ],
+
+  "posting": { "enabled": false }
+}
