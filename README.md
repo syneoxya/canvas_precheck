@@ -22,7 +22,7 @@ The system is designed to scale across:
 
 1.2 Clone the repository
 
-    git clone 
+    git clone https://github.com/JalIrani/agent-feedback.git
     cd canvas-precheck
 
 ------------------------------------------------------------
