@@ -21,13 +21,26 @@ class LLMReviewerAgent:
             return state
 
         system = (
-            "Return JSON ONLY with schema:\n"
-            "{ items: [{ rubric_item, score, finding, suggestion, evidence_keys }], overall }\n"
-            "Important: evidence_keys MUST be chosen only from allowed_evidence_keys."
+            "You must return VALID JSON ONLY (no markdown, no code fences).\n"
+            "Schema:\n"
+            "{\n"
+            '  "items": [\n'
+            "    {\n"
+            '      "rubric_item": "string",\n'
+            '      "score": 0,\n'
+            '      "finding": "string",\n'
+            '      "suggestion": "string",\n'
+            '      "evidence_keys": ["string"]\n'
+            "    }\n"
+            "  ],\n"
+            '  "overall": "string"\n'
+            "}\n"
+            'Important: "overall" MUST be a string summary, not a number.\n'
+            "Important: evidence_keys MUST be chosen only from allowed_evidence_keys.\n"
         )
 
         payload = {
-            "feedback": fb.model_dump(),
+            "feedback": fb.model_dump(mode="json"),
             "allowed_evidence_keys": sorted(list(fb.evidence.keys())),
             "prompts": prompts
         }
@@ -37,5 +50,15 @@ class LLMReviewerAgent:
             {"role": "user", "content": json.dumps(payload)}
         ])
 
-        state["llm"] = LLMJSON.model_validate(json.loads(resp.content))
+        # Parse + sanitize model output defensively
+        try:
+            raw = json.loads(resp.content)
+        except json.JSONDecodeError:
+            raw = {"items": [], "overall": "Model returned non-JSON output."}
+
+        # Ensure overall is always a string (model sometimes returns a number)
+        if "overall" in raw and not isinstance(raw["overall"], str):
+            raw["overall"] = str(raw["overall"])
+
+        state["llm"] = LLMJSON.model_validate(raw)
         return state

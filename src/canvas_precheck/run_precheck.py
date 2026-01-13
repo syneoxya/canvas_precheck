@@ -1,9 +1,17 @@
-import os, json, pathlib
+import os
+import json
+import pathlib
 from dateutil import parser
 
-from canvas_precheck.secrets import CANVAS_BASE_URL, CANVAS_TOKEN, OPENAI_API_KEY
-# Make LangChain/OpenAI read the key
-os.environ["OPENAI_API_KEY"] = OPENAI_API_KEY
+CANVAS_BASE_URL = os.getenv("CANVAS_BASE_URL", "https://canvas.jhu.edu")
+CANVAS_TOKEN = os.getenv("CANVAS_API_TOKEN")
+OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
+
+if not CANVAS_TOKEN:
+    raise RuntimeError("CANVAS_API_TOKEN is not set")
+
+if not OPENAI_API_KEY:
+    raise RuntimeError("OPENAI_API_KEY is not set")
 
 from canvas_precheck.canvas_client import CanvasClient
 from canvas_precheck.models import SubmissionMetadata, FeedbackJSON
@@ -72,5 +80,13 @@ def main(config_path: str):
         print(f"Done: {student_name} -> {workdir/'feedback.md'}")
 
 if __name__ == "__main__":
-    import sys
-    main(sys.argv[1])
+    import argparse
+
+    p = argparse.ArgumentParser()
+    p.add_argument(
+        "--config",
+        default="configs/a6.json",
+        help="Path to assignment config JSON (default: configs/a6.json)"
+    )
+    args = p.parse_args()
+    main(args.config)
