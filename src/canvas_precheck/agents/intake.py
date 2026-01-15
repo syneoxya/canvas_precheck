@@ -1,7 +1,7 @@
 import os
 from canvas_precheck.models import FeedbackJSON, Finding
 from canvas_precheck.utils import normalize_filename, ext_allowed
-
+from canvas_precheck.utils import canonicalize_filename
 class IntakeAgent:
     name = "IntakeAgent"
 
@@ -46,7 +46,11 @@ class IntakeAgent:
             if not url:
                 continue
 
-            normalized, was_norm, is_expected = normalize_filename(orig, aliases, expected)
+            canonical_base = cfg.get("canonical_filename", "a6")
+
+            normalized, ext = canonicalize_filename(orig, canonical_base)
+            was_norm = normalized != orig
+            is_expected = True
 
             if expected and not is_expected:
                 filename_ok = False
@@ -56,14 +60,40 @@ class IntakeAgent:
                     message=f"Unexpected filename '{orig}'. Expected one of {expected}."
                 ))
 
-            if was_norm:
+            if orig != normalized:
+                k = f"filename_map.{orig}"
+                fb.evidence[k] = normalized
                 fb.findings.append(Finding(
-                    key="filename_normalized",
-                    severity="info",
-                    message=f"Renamed '{orig}' -> '{normalized}'."
-                ))
+                    key="filename_noncanonical",
+                    severity="warning",
+                    message=f"Filename '{orig}' does not follow required naming. Using '{normalized}'.",
+                    evidence_keys=[k]
+                ))           
 
             dest = os.path.join(workdir, normalized)
+
+            if os.path.exists(dest):
+                # Create a dupes folder and keep both files
+                dupes_dir = os.path.join(workdir, "dupes")
+                os.makedirs(dupes_dir, exist_ok=True)
+
+                base, ext = os.path.splitext(normalized)
+                i = 2
+                new_name = f"{base}__dup{i}{ext}"
+                new_dest = os.path.join(dupes_dir, new_name)
+                while os.path.exists(new_dest):
+                    i += 1
+                    new_name = f"{base}__dup{i}{ext}"
+                    new_dest = os.path.join(dupes_dir, new_name)
+
+                fb.findings.append(Finding(
+                    key="filename_collision",
+                    severity="warning",
+                    message=f"Multiple files normalized to '{normalized}'. Keeping additional copy as '{new_name}' in dupes/."
+                ))
+
+                # For inventory and downloading, use the new destination
+                dest = new_dest
             self.canvas.download_file(url, dest)
 
             if allowed_exts and not ext_allowed(dest, allowed_exts):
