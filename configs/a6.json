@@ -2,24 +2,24 @@
   "course_id": 99716,
   "assignment_id": 1054077,
 
-  "expected_filenames": ["a6.ipynb"],
-  "filename_aliases": {
-  "Assignment 6.ipynb": "a6.ipynb",
-  "assignment6.ipynb": "a6.ipynb",
-  "assignment6 (1).ipynb": "a6.ipynb",
-  "a6 (1).ipynb": "a6.ipynb"
-},
+  "canonical_filename": "a6",
 
-  "allowed_extensions": [".pdf", ".zip", ".txt", ".md", ".py", ".ipynb"],
+  "allowed_extensions": [".ipynb", ".zip", ".py", ".txt", ".md"],
   "required_files": ["a6.ipynb"],
   "zip_policy": { "allow_zip": true, "flatten": true },
+
+  "content_extract": {
+    "enabled": true,
+    "max_chars": 12000,
+    "prefer_extensions": [".ipynb", ".py", ".md", ".txt"]
+  },
 
   "tests": [
     {
       "name": "nl_smoke",
       "type": "nl_check",
       "rules": [
-        { "id": "min_length", "min_chars": 100 }
+        { "id": "min_length", "min_chars": 800 }
       ]
     }
   ],
@@ -28,7 +28,7 @@
   "llm_prompts": [
     {
       "name": "a6_review",
-      "prompt_template": "Review the submission's code. Is the code written well and does it answer the questions asked?"
+      "prompt_template": "You will receive the notebook content in content.preview. Review the submission for: (1) completeness, (2) correctness signals, (3) code quality (readability, organization), and (4) clarity of explanations. Give 3-6 specific actionable suggestions. If content.preview is missing or too short, say you cannot assess content."
     }
   ],
 

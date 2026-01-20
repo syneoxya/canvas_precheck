@@ -23,6 +23,8 @@ from canvas_precheck.agents.test_runner import TestRunnerAgent
 from canvas_precheck.agents.llm_reviewer import LLMReviewerAgent
 from canvas_precheck.agents.feedback_composer import FeedbackComposerAgent
 from canvas_precheck.agents.lms_poster import LMSPosterAgent
+from canvas_precheck.agents.content_extract import ContentExtractAgent
+
 
 def main(config_path: str):
     cfg = json.loads(pathlib.Path(config_path).read_text(encoding="utf-8"))
@@ -36,13 +38,14 @@ def main(config_path: str):
     subs = canvas.list_submissions(course_id, assignment_id)
 
     pipeline = Pipeline([
-        IntakeAgent(canvas),
-        FileStructureAgent(),
-        TestRunnerAgent(),
-        LLMReviewerAgent(model=llm_model),
-        FeedbackComposerAgent(),
-        LMSPosterAgent(canvas, enabled=posting_enabled),
-    ])
+    IntakeAgent(canvas),
+    FileStructureAgent(),
+    ContentExtractAgent(max_chars=6000),
+    TestRunnerAgent(),
+    LLMReviewerAgent(model=llm_model),
+    FeedbackComposerAgent(),
+    LMSPosterAgent(canvas, enabled=posting_enabled),
+])
 
     out_root = pathlib.Path("runs") / f"course_{course_id}" / f"assignment_{assignment_id}"
     out_root.mkdir(parents=True, exist_ok=True)

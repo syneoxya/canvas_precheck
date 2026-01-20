@@ -1,7 +1,8 @@
 import os
 from canvas_precheck.models import FeedbackJSON, Finding
-from canvas_precheck.utils import normalize_filename, ext_allowed
-from canvas_precheck.utils import canonicalize_filename
+from canvas_precheck.utils import ext_allowed, canonicalize_filename
+
+
 class IntakeAgent:
     name = "IntakeAgent"
 
@@ -34,11 +35,16 @@ class IntakeAgent:
                 evidence_keys=["meta.submitted_at", "meta.due_at"]
             ))
 
+        # config
         expected = cfg.get("expected_filenames", [])
-        aliases = cfg.get("filename_aliases", {})
         allowed_exts = cfg.get("allowed_extensions", [])
+        canonical_base = cfg.get("canonical_filename", "a6")
 
         filename_ok = True
+
+        # Track which canonical destination filenames have already been created in root
+        # This enforces the invariant: canonical stays in root; duplicates go to dupes/
+        seen_dest_names = set()
 
         for att in meta.attachments:
             url = att.get("url")
@@ -46,20 +52,10 @@ class IntakeAgent:
             if not url:
                 continue
 
-            canonical_base = cfg.get("canonical_filename", "a6")
+            # Force canonical naming: a6.<original extension>
+            normalized, _ext = canonicalize_filename(orig, canonical_base)
 
-            normalized, ext = canonicalize_filename(orig, canonical_base)
-            was_norm = normalized != orig
-            is_expected = True
-
-            if expected and not is_expected:
-                filename_ok = False
-                fb.findings.append(Finding(
-                    key="filename_unexpected",
-                    severity="warning",
-                    message=f"Unexpected filename '{orig}'. Expected one of {expected}."
-                ))
-
+            # Evidence + warning if student didn't follow naming convention
             if orig != normalized:
                 k = f"filename_map.{orig}"
                 fb.evidence[k] = normalized
@@ -68,42 +64,69 @@ class IntakeAgent:
                     severity="warning",
                     message=f"Filename '{orig}' does not follow required naming. Using '{normalized}'.",
                     evidence_keys=[k]
-                ))           
+                ))
 
-            dest = os.path.join(workdir, normalized)
+            # If you set expected_filenames, treat canonical output as expected
+            # (This keeps the check meaningful but not brittle.)
+            if expected and (normalized not in expected):
+                filename_ok = False
+                fb.findings.append(Finding(
+                    key="filename_unexpected",
+                    severity="warning",
+                    message=f"Unexpected canonical filename '{normalized}'. Expected one of {expected}."
+                ))
 
-            if os.path.exists(dest):
-                # Create a dupes folder and keep both files
+            root_dest = os.path.join(workdir, normalized)
+
+            # Duplicate handling:
+            # - First time we see this normalized name -> keep it in root
+            # - Subsequent times -> save into dupes/ with __dup suffix
+            if normalized in seen_dest_names or os.path.exists(root_dest):
                 dupes_dir = os.path.join(workdir, "dupes")
                 os.makedirs(dupes_dir, exist_ok=True)
 
                 base, ext = os.path.splitext(normalized)
                 i = 2
-                new_name = f"{base}__dup{i}{ext}"
-                new_dest = os.path.join(dupes_dir, new_name)
-                while os.path.exists(new_dest):
+                while True:
+                    dup_name = f"{base}__dup{i}{ext}"
+                    dup_dest = os.path.join(dupes_dir, dup_name)
+                    if not os.path.exists(dup_dest):
+                        break
                     i += 1
-                    new_name = f"{base}__dup{i}{ext}"
-                    new_dest = os.path.join(dupes_dir, new_name)
 
                 fb.findings.append(Finding(
-                    key="filename_collision",
+                    key="filename_duplicate",
                     severity="warning",
-                    message=f"Multiple files normalized to '{normalized}'. Keeping additional copy as '{new_name}' in dupes/."
+                    message=f"Multiple attachments resolved to destination '{normalized}'. Keeping additional copy as '{dup_name}' in dupes/."
                 ))
 
-                # For inventory and downloading, use the new destination
-                dest = new_dest
-            self.canvas.download_file(url, dest)
+                self.canvas.download_file(url, dup_dest)
 
-            if allowed_exts and not ext_allowed(dest, allowed_exts):
+                # Optional: You can still type-check dupes, but don't add to file_inventory,
+                # because required-files checks should look at canonical root outputs.
+                if allowed_exts and not ext_allowed(dup_dest, allowed_exts):
+                    fb.findings.append(Finding(
+                        key="filetype_not_allowed",
+                        severity="error",
+                        message=f"File type not allowed: {dup_name}. Allowed: {allowed_exts}"
+                    ))
+
+                continue  # IMPORTANT: do not overwrite canonical, do not add dup to inventory
+
+            # First (canonical) file -> download to root
+            self.canvas.download_file(url, root_dest)
+            seen_dest_names.add(normalized)
+
+            # Validate file types for canonical file
+            if allowed_exts and not ext_allowed(root_dest, allowed_exts):
                 fb.findings.append(Finding(
                     key="filetype_not_allowed",
                     severity="error",
                     message=f"File type not allowed: {normalized}. Allowed: {allowed_exts}"
                 ))
 
-            fb.file_inventory.append(dest)
+            # Only canonical files go into inventory
+            fb.file_inventory.append(root_dest)
 
         fb.filename_ok = filename_ok
         state["feedback"] = fb

@@ -1,0 +1,29 @@
+{
+  "course_id": 99716,
+  "assignment_id": 1032134,
+
+  "canonical_filename": "a1",
+  "expected_filenames": ["a1.docx"],
+  "required_files": ["a1.docx"],
+  "allowed_extensions": [".pdf",".docx"],
+
+  "zip_policy": { "allow_zip": false, "flatten": false },
+
+  "tests": [
+    {
+      "name": "pdf_exists",
+      "type": "file_exists",
+      "path": "a1.pdf"
+    }
+  ],
+
+  "llm": { "enabled": true, "model": "gpt-4.1-mini" },
+  "llm_prompts": 
+    {
+      "name": "a1_review",
+      "prompt_template": "Read the assigment and give feedback for 3 categories: What they did well, Room for improvement, Overall Feedback. Return JSON per schema."
+    }
+  ,
+
+  "posting": { "enabled": false }
+}

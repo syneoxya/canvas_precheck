@@ -21,22 +21,14 @@ class LLMReviewerAgent:
             return state
 
         system = (
-            "You must return VALID JSON ONLY (no markdown, no code fences).\n"
-            "Schema:\n"
-            "{\n"
-            '  "items": [\n'
-            "    {\n"
-            '      "rubric_item": "string",\n'
-            '      "score": 0,\n'
-            '      "finding": "string",\n'
-            '      "suggestion": "string",\n'
-            '      "evidence_keys": ["string"]\n'
-            "    }\n"
-            "  ],\n"
-            '  "overall": "string"\n'
-            "}\n"
-            'Important: "overall" MUST be a string summary, not a number.\n'
-            "Important: evidence_keys MUST be chosen only from allowed_evidence_keys.\n"
+            "Return JSON ONLY with schema:\n"
+            "{ items: [{ rubric_item, score, finding, suggestion, evidence_keys }], overall }\n"
+            "Rules:\n"
+            "1) evidence_keys MUST be chosen only from allowed_evidence_keys.\n"
+            "2) If you comment on the submission's CONTENT (writing, completeness, correctness), "
+            "you MUST include 'content.preview' in evidence_keys.\n"
+            "3) If 'content.preview' is not present or is empty, you MUST say you cannot assess content "
+            "and only comment on metadata.\n"
         )
 
         payload = {

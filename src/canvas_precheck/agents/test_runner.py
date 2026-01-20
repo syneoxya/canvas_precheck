@@ -17,7 +17,7 @@ class TestRunnerAgent:
     def run(self, state: dict) -> dict:
         cfg = state["config"]
         fb: FeedbackJSON = state["feedback"]
-        text = self._read_text_files(fb.file_inventory)
+        text = fb.evidence.get("content.preview", "") or self._read_text_files(fb.file_inventory)
 
         results = {}
         for t in cfg.get("tests", []):
