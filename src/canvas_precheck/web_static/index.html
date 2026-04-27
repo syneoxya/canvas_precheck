@@ -1,0 +1,278 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Canvas Precheck</title>
+    <link rel="stylesheet" href="/static/styles.css" />
+  </head>
+  <body>
+    <div class="appShell">
+      <aside class="sidebar">
+        <div class="sideBrand">
+          <div class="brandMark">CP</div>
+          <div>
+            <strong>Canvas Precheck</strong>
+            <span>Instructor dashboard</span>
+          </div>
+        </div>
+        <nav class="sideNav" aria-label="Dashboard sections">
+          <a href="#setup" data-page-link="setup">Setup</a>
+          <a href="#runs" data-page-link="runs">Local runs</a>
+          <a href="#students" data-page-link="students">Students</a>
+          <a href="#feedback" data-page-link="feedback">Feedback</a>
+        </nav>
+        <div class="sideNote">
+          <span>Current engine</span>
+          <strong id="statProvider">Ollama</strong>
+        </div>
+      </aside>
+
+      <div class="workspace">
+        <header class="topbar">
+          <div class="brandBlock">
+            <div>
+              <h1>Canvas Precheck</h1>
+              <p id="health">Checking local service...</p>
+            </div>
+          </div>
+          <div class="topActions">
+            <span id="canvasStatus" class="statusChip neutral">Canvas unset</span>
+            <span id="openaiStatus" class="statusChip neutral">OpenAI optional</span>
+            <button id="refreshRuns" class="secondaryButton" type="button">Refresh Runs</button>
+          </div>
+        </header>
+
+        <section class="statsGrid" aria-label="Run statistics" hidden>
+          <article class="statCard">
+            <span>Local runs</span>
+            <strong id="statRuns">0</strong>
+          </article>
+          <article class="statCard">
+            <span>Students reviewed</span>
+            <strong id="statStudents">0</strong>
+          </article>
+          <article class="statCard">
+            <span>Latest assignment</span>
+            <strong id="statLatest">None</strong>
+          </article>
+        </section>
+
+        <main class="pageHost">
+      <section id="page-setup" class="page active">
+        <section id="connect" class="panel controls">
+        <div class="panelTitle">
+          <span>1</span>
+          <div>
+            <h2>Connect</h2>
+            <p>Set tokens for this local session.</p>
+          </div>
+        </div>
+        <div class="settingsBox">
+          <h3>Canvas Connection</h3>
+          <label>
+            Canvas Base URL
+            <input id="canvasBaseUrlInput" type="text" value="https://jhu.instructure.com" />
+          </label>
+          <label>
+            Canvas API Token
+            <input id="canvasTokenInput" type="password" placeholder="Paste token for this session" autocomplete="off" />
+          </label>
+          <button id="saveCanvasSettings" type="button">Save Canvas Token</button>
+          <p class="hint">Saved only in this running local server. It is not written to a file.</p>
+        </div>
+        <div class="settingsBox">
+          <h3>OpenAI Connection</h3>
+          <label>
+            OpenAI API Token
+            <input id="openaiTokenInput" type="password" placeholder="Optional for later" autocomplete="off" />
+          </label>
+          <button id="saveOpenAISettings" type="button">Save OpenAI Token</button>
+          <p class="hint">Optional. Current configs use Ollama unless llm.provider is changed to openai.</p>
+        </div>
+        <div id="run" class="panelTitle compactTitle">
+          <span>2</span>
+          <div>
+            <h2>Run Precheck</h2>
+            <p>Start small, then scale up.</p>
+          </div>
+        </div>
+        <label>
+          Course
+          <select id="courseSelect"></select>
+        </label>
+        <label>
+          Assignment
+          <select id="assignmentSelect"></select>
+        </label>
+        <div class="grid2">
+          <label>
+            Limit
+            <input id="limitInput" type="number" min="1" value="1" />
+          </label>
+          <label>
+            User ID
+            <input id="userInput" type="number" placeholder="optional" />
+          </label>
+        </div>
+        <label>
+          Config
+          <input id="configInput" type="text" value="configs/a6.json" />
+        </label>
+        <details class="configEditor">
+          <summary>Edit config fields</summary>
+          <div class="configActions">
+            <button id="loadConfigButton" class="secondaryButton" type="button">Load Config</button>
+            <button id="saveConfigButton" type="button">Save Config</button>
+          </div>
+          <div class="grid2">
+            <label>
+              LLM Provider
+              <select id="llmProviderInput">
+                <option value="ollama">ollama</option>
+                <option value="openai">openai</option>
+              </select>
+            </label>
+            <label>
+              Model
+              <input id="llmModelInput" type="text" value="qwen2.5:3b" />
+            </label>
+          </div>
+          <label>
+            Prompt
+            <textarea id="promptInput" rows="7"></textarea>
+          </label>
+          <div class="grid2">
+            <label>
+              Canonical filename
+              <input id="canonicalInput" type="text" placeholder="a6" />
+            </label>
+            <label>
+              Required files
+              <input id="requiredFilesInput" type="text" placeholder="a6.ipynb" />
+            </label>
+          </div>
+          <label>
+            Allowed extensions
+            <input id="allowedExtensionsInput" type="text" placeholder=".ipynb, .pdf, .py" />
+          </label>
+          <div class="grid2">
+            <label>
+              Max chars
+              <input id="maxCharsInput" type="number" min="1" />
+            </label>
+            <label>
+              Chunk chars
+              <input id="chunkCharsInput" type="number" min="1" />
+            </label>
+          </div>
+          <div class="grid2">
+            <label>
+              Max chunks
+              <input id="maxChunksInput" type="number" min="1" />
+            </label>
+            <label>
+              OCR fallback
+              <select id="ocrEnabledInput">
+                <option value="true">enabled</option>
+                <option value="false">disabled</option>
+              </select>
+            </label>
+          </div>
+          <label>
+            Preferred extraction order
+            <input id="preferExtensionsInput" type="text" placeholder=".ipynb, .pdf, .py" />
+          </label>
+          <label class="checkRow">
+            <input id="postingEnabledInput" type="checkbox" />
+            Enable Canvas posting
+          </label>
+          <p class="hint">These fields save directly to the selected config JSON file.</p>
+        </details>
+        <button id="runButton" type="button">Run Precheck</button>
+        <pre id="runStatus" class="statusLog"></pre>
+        </section>
+      </section>
+
+      <section id="page-runs" class="page">
+      <section id="runs" class="panel runs">
+        <div class="panelTitle">
+          <span>3</span>
+          <div>
+            <h2>Local Runs</h2>
+            <p>Pick a saved assignment run.</p>
+          </div>
+        </div>
+        <div id="runsList" class="list"></div>
+      </section>
+      </section>
+
+      <section id="page-students" class="page">
+      <section id="students" class="panel students">
+        <div class="sectionHeader">
+          <div class="panelTitle noMargin">
+            <span>4</span>
+            <div>
+              <h2>Students</h2>
+              <p>Review generated results.</p>
+            </div>
+          </div>
+          <a id="summaryLink" class="secondaryLink" href="#" hidden>Download Excel</a>
+        </div>
+        <div id="studentsList" class="list"></div>
+      </section>
+      </section>
+
+      <section id="page-feedback" class="page">
+      <section id="feedback" class="panel detail">
+        <div class="panelTitle">
+          <span>5</span>
+          <div>
+            <h2>Feedback Detail</h2>
+            <p>Read the student-facing feedback and raw LLM result.</p>
+          </div>
+        </div>
+        <div id="detailEmpty" class="empty">
+          <strong>No student selected</strong>
+          <span>Select a student to view generated feedback.</span>
+        </div>
+        <div id="detailContent" hidden>
+          <h3 id="detailName"></h3>
+          <div class="detailGrid">
+            <article>
+              <h4>Markdown Feedback</h4>
+              <pre id="feedbackMarkdown"></pre>
+            </article>
+            <article>
+              <h4>LLM Output</h4>
+              <pre id="llmJson"></pre>
+            </article>
+          </div>
+        </div>
+      </section>
+      </section>
+        </main>
+      </div>
+    </div>
+
+    <div id="progressOverlay" class="progressOverlay" hidden>
+      <div class="progressTile">
+        <button id="closeProgressButton" class="closeProgressButton" type="button" aria-label="Close progress popup">×</button>
+        <div class="progressRing">
+          <span id="progressCount">0/0</span>
+        </div>
+        <div>
+          <h2>Grading submissions</h2>
+          <p id="progressStudent">Preparing run...</p>
+          <div class="progressTrack">
+            <div id="progressBar"></div>
+          </div>
+          <p id="progressDetail">0 students graded out of 0</p>
+          <button id="cancelRunButton" class="secondaryButton cancelButton" type="button">Stop after current student</button>
+        </div>
+      </div>
+    </div>
+
+    <script src="/static/app.js"></script>
+  </body>
+</html>

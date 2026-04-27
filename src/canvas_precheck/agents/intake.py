@@ -38,6 +38,7 @@ class IntakeAgent:
         # config
         expected = cfg.get("expected_filenames", [])
         allowed_exts = cfg.get("allowed_extensions", [])
+        preserve_original_filenames = bool(cfg.get("preserve_original_filenames", False))
         canonical_base = cfg.get("canonical_filename", "a6")
 
         filename_ok = True
@@ -52,11 +53,15 @@ class IntakeAgent:
             if not url:
                 continue
 
-            # Force canonical naming: a6.<original extension>
-            normalized, _ext = canonicalize_filename(orig, canonical_base)
+            if preserve_original_filenames:
+                normalized = os.path.basename(orig)
+                _ext = os.path.splitext(normalized)[1]
+            else:
+                # Force canonical naming: a6.<original extension>
+                normalized, _ext = canonicalize_filename(orig, canonical_base)
 
             # Evidence + warning if student didn't follow naming convention
-            if orig != normalized:
+            if not preserve_original_filenames and orig != normalized:
                 k = f"filename_map.{orig}"
                 fb.evidence[k] = normalized
                 fb.findings.append(Finding(
@@ -81,7 +86,7 @@ class IntakeAgent:
             # Duplicate handling:
             # - First time we see this normalized name -> keep it in root
             # - Subsequent times -> save into dupes/ with __dup suffix
-            if normalized in seen_dest_names or os.path.exists(root_dest):
+            if normalized in seen_dest_names:
                 dupes_dir = os.path.join(workdir, "dupes")
                 os.makedirs(dupes_dir, exist_ok=True)
 
@@ -102,8 +107,6 @@ class IntakeAgent:
 
                 self.canvas.download_file(url, dup_dest)
 
-                # Optional: You can still type-check dupes, but don't add to file_inventory,
-                # because required-files checks should look at canonical root outputs.
                 if allowed_exts and not ext_allowed(dup_dest, allowed_exts):
                     fb.findings.append(Finding(
                         key="filetype_not_allowed",
@@ -111,7 +114,8 @@ class IntakeAgent:
                         message=f"File type not allowed: {dup_name}. Allowed: {allowed_exts}"
                     ))
 
-                continue  # IMPORTANT: do not overwrite canonical, do not add dup to inventory
+                fb.file_inventory.append(dup_dest)
+                continue  # Do not overwrite canonical; grade the duplicate copy too.
 
             # First (canonical) file -> download to root
             self.canvas.download_file(url, root_dest)

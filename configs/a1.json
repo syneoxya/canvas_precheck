@@ -17,7 +17,7 @@
     }
   ],
 
-  "llm": { "enabled": true, "model": "gpt-4.1-mini" },
+  "llm": { "enabled": true, "provider": "ollama", "model": "qwen2.5:3b" },
   "llm_prompts": 
     {
       "name": "a1_review",

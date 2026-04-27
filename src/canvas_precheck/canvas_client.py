@@ -7,12 +7,38 @@ class CanvasClient:
         self.s = requests.Session()
         self.s.headers.update({"Authorization": f"Bearer {token}"})
 
+    def _get_paginated(self, url: str, params: Dict[str, Any] | None = None) -> List[Dict[str, Any]]:
+        results: List[Dict[str, Any]] = []
+        next_url = url
+        next_params = params or {}
+
+        while next_url:
+            r = self.s.get(next_url, params=next_params, timeout=30)
+            r.raise_for_status()
+            results.extend(r.json())
+            next_url = r.links.get("next", {}).get("url")
+            next_params = {}
+
+        return results
+
+    def list_courses(self) -> List[Dict[str, Any]]:
+        url = f"{self.base_url}/api/v1/courses"
+        params = {
+            "enrollment_state": "active",
+            "include[]": ["term"],
+            "per_page": 100,
+        }
+        return self._get_paginated(url, params=params)
+
+    def list_assignments(self, course_id: int) -> List[Dict[str, Any]]:
+        url = f"{self.base_url}/api/v1/courses/{course_id}/assignments"
+        params = {"per_page": 100, "order_by": "due_at"}
+        return self._get_paginated(url, params=params)
+
     def list_submissions(self, course_id: int, assignment_id: int) -> List[Dict[str, Any]]:
         url = f"{self.base_url}/api/v1/courses/{course_id}/assignments/{assignment_id}/submissions"
         params = {"include[]": ["user"], "per_page": 100}
-        r = self.s.get(url, params=params, timeout=30)
-        r.raise_for_status()
-        return r.json()
+        return self._get_paginated(url, params=params)
 
     def download_file(self, file_url: str, dest_path: str) -> None:
         with self.s.get(file_url, stream=True, timeout=60) as r:

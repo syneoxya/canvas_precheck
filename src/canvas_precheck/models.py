@@ -38,3 +38,5 @@ class LLMRubricItem(BaseModel):
 class LLMJSON(BaseModel):
     items: List[LLMRubricItem]
     overall: str
+    section_scores: Dict[str, float] = Field(default_factory=dict)
+    overall_score: Optional[float] = None

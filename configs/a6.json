@@ -1,36 +1,57 @@
 {
   "course_id": 99716,
   "assignment_id": 1054077,
-
-  "canonical_filename": "a6",
-
-  "allowed_extensions": [".ipynb", ".zip", ".py", ".txt", ".md"],
-  "required_files": ["a6.ipynb"],
-  "zip_policy": { "allow_zip": true, "flatten": true },
-
+  "preserve_original_filenames": true,
+  "canonical_filename": "a1",
+  "allowed_extensions": [],
+  "required_files": [],
+  "zip_policy": {
+    "allow_zip": true,
+    "flatten": true
+  },
   "content_extract": {
     "enabled": true,
     "max_chars": 12000,
-    "prefer_extensions": [".ipynb", ".py", ".md", ".txt"]
+    "chunk_chars": 3000,
+    "max_chunks": 4,
+    "min_pdf_text_chars_for_ocr": 500,
+    "ocr_enabled": true,
+    "prefer_extensions": [
+      ".ipynb",
+      ".pdf",
+      ".py",
+      ".r",
+      ".json",
+      ".csv",
+      ".docx",
+      ".md",
+      ".txt"
+    ]
   },
-
   "tests": [
     {
       "name": "nl_smoke",
       "type": "nl_check",
       "rules": [
-        { "id": "min_length", "min_chars": 800 }
+        {
+          "id": "min_length",
+          "min_chars": 800
+        }
       ]
     }
   ],
-
-  "llm": { "enabled": true, "model": "gpt-4.1-mini" },
+  "llm": {
+    "enabled": true,
+    "provider": "ollama",
+    "model": "qwen2.5:3b"
+  },
   "llm_prompts": [
     {
       "name": "a6_review",
-      "prompt_template": "You will receive the notebook content in content.preview. Review the submission for: (1) completeness, (2) correctness signals, (3) code quality (readability, organization), and (4) clarity of explanations. Give 3-6 specific actionable suggestions. If content.preview is missing or too short, say you cannot assess content."
+      "prompt_template": "You will receive extracted submission content split into sections when available: content.coding.preview for the coding/notebook portion and content.writing.preview for the written/PDF portion. Review each present section independently for academic/content quality only. For the coding section, assess correctness, completeness, code clarity, visible outputs, tests, and whether the notebook/script answers the assignment. For the writing section, assess argument quality, completeness, explanation, evidence, reflection, and clarity. Do not penalize filename issues, lateness, missing files, duplicate files, or Canvas metadata. Produce exactly three feedback sections: What was done well, What is missing, and What can be improved. In each section, discuss the coding portion and writing portion separately when both are present, cite specific evidence from the submitted content, and then summarize the student overall. Return section_scores for coding and writing on a 0-100 scale when those sections are present, plus one overall_score on a 0-100 scale for the aggregate student grade. Do not forget about the written feedback"
     }
   ],
-
-  "posting": { "enabled": false }
+  "posting": {
+    "enabled": false
+  }
 }

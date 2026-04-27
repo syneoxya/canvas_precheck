@@ -9,6 +9,14 @@ dependencies = [
   "requests",
   "pydantic",
   "python-dateutil",
+  "openpyxl",
+  "pypdf",
+  "PyMuPDF",
+  "Pillow",
+  "pytesseract",
+  "python-docx",
+  "fastapi",
+  "uvicorn",
   "langchain",
   "langchain-openai"
 ]

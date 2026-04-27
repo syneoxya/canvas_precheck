@@ -31,8 +31,15 @@ class FeedbackComposerAgent:
                 lines.append(f"- {name}: {'PASS' if r.get('passed') else 'FAIL'}")
             lines.append("")
 
-        if llm and llm.items:
+        if llm and (llm.items or llm.section_scores or llm.overall_score is not None or llm.overall):
             lines.append("### LLM review")
+            if llm.section_scores or llm.overall_score is not None:
+                lines.append("#### Scores")
+                for section, score in llm.section_scores.items():
+                    lines.append(f"- {section.title()}: {round(score)}/100")
+                if llm.overall_score is not None:
+                    lines.append(f"- Aggregate: {round(llm.overall_score)}/100")
+                lines.append("")
             for it in llm.items:
                 lines.append(f"- **{it.rubric_item}**: {it.finding}")
                 lines.append(f"  - Suggestion: {it.suggestion}")
